@@ -1,4 +1,4 @@
-package main
+package days
 
 import (
 	"regexp"
@@ -31,7 +31,7 @@ func invertString(str string) string {
 	return inverted
 }
 
-func main() {
+func Day1() {
 	for i, digit := range digits {
 		digitsMap[digit] = i + 1
 	}
