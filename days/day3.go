@@ -16,6 +16,7 @@ type engineNumber struct {
 	startIndex int
 	endIndex int
 	aroundSymbols []string
+	gears [][2]int
 }
 
 func (n *engineNumber) IsEnginePart() bool {
@@ -30,6 +31,15 @@ func (n *engineNumber) IsEnginePart() bool {
 	}
 
 	return isEnginePart
+}
+
+func (n *engineNumber) ContainsGear(gear [2]int) bool {
+	for _, g := range n.gears {
+		if g == gear {
+			return true
+		}
+	}
+	return false
 }
 
 
@@ -61,22 +71,40 @@ func (m *matrix) NextLine() {
 	m.currentColumn = 0
 }
 
+func (n *engineNumber) HasGears() bool {
+	return len(n.gears) > 0
+}
+
+func (m *matrix) FillGear(gears *[][2]int, symbol string, lineIdx int, colIds int) {
+	if (symbol == "*") {
+		*gears = append(*gears, [2]int{lineIdx, colIds})
+	}
+}
+
 func (m *matrix) FillAroundSymbols(n *engineNumber) {
 	if n.startIndex > 0 {
-		n.aroundSymbols = append(n.aroundSymbols, m.Content[n.lineIndex][n.startIndex-1])
+		symb := m.Content[n.lineIndex][n.startIndex-1]
+		n.aroundSymbols = append(n.aroundSymbols, symb)
+		m.FillGear(&n.gears, symb, n.lineIndex, n.startIndex-1)
 	}
 	if n.endIndex < m.NbColumns()-1 {
-		n.aroundSymbols = append(n.aroundSymbols, m.Content[n.lineIndex][n.endIndex+1])
+		symb := m.Content[n.lineIndex][n.endIndex+1]
+		n.aroundSymbols = append(n.aroundSymbols, symb)
+		m.FillGear(&n.gears, symb, n.lineIndex, n.endIndex+1)
 	}
 
 	start := max(0, n.startIndex-1)
 	stop := min(m.NbColumns()-1, n.endIndex+1)
 	for i := start; i <= stop; i++ {
 		if n.lineIndex > 0 {
-			n.aroundSymbols = append(n.aroundSymbols, m.Content[n.lineIndex-1][i])
+			x := m.Content[n.lineIndex-1][i]
+			n.aroundSymbols = append(n.aroundSymbols, x)
+			m.FillGear(&n.gears, x, n.lineIndex-1, i)
 		}
 		if n.lineIndex < m.NbLines()-1 {
-			n.aroundSymbols = append(n.aroundSymbols, m.Content[n.lineIndex+1][i])
+			x := m.Content[n.lineIndex+1][i]
+			n.aroundSymbols = append(n.aroundSymbols, x)
+			m.FillGear(&n.gears, x, n.lineIndex+1, i)
 		}
 	}
 }
@@ -138,15 +166,27 @@ func Day3() {
 	}
 
 	var res int
+	var partNumbers []engineNumber
 	for {
 		n, err := matrix.NextNumber()
 		if err != nil {
 			break
 		}
-		fmt.Printf("Number %s : %s => engine part ? %t\n", n.Value, n.aroundSymbols, n.IsEnginePart())
-		if n.IsEnginePart() {
-			val, _ := strconv.Atoi(n.Value)
-			res += val
+		
+		fmt.Printf("Number %s : %s => engine part ? %t | gears: %#v\n", n.Value, n.aroundSymbols, n.IsEnginePart(), n.gears)
+		if (n.HasGears()) {
+
+			for _, partNb := range partNumbers {
+				for _, gear := range n.gears {
+					if partNb.ContainsGear(gear) {
+						val1, _ := strconv.Atoi(partNb.Value)
+						val2, _ := strconv.Atoi(n.Value)
+						res += val1 * val2
+					}
+				}
+			}
+
+			partNumbers = append(partNumbers, n)
 		}
 	}
 
