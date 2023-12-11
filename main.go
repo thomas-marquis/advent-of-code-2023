@@ -4,5 +4,5 @@ import "github.com/thomas-marquis/advent-of-code-2023/days"
 
 
 func main() {
-	days.Day4()
+	days.Day5()
 }

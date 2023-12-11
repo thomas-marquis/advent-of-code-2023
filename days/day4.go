@@ -3,7 +3,6 @@ package days
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"sync"
 
 	"github.com/thomas-marquis/advent-of-code-2023/utils"
@@ -18,17 +17,6 @@ const (
 	maxCardNb = 193
 )
 
-func ToIntSlice(strSlice []string) []int {
-	var intSlice []int
-	for _, str := range strSlice {
-		intVal, err := strconv.Atoi(str)
-		if err != nil {
-			panic(err)
-		}
-		intSlice = append(intSlice, intVal)
-	}
-	return intSlice
-}
 
 type Card struct {
 	Id int
@@ -52,8 +40,8 @@ func Day4() {
 		lineContent := scanner.Text()
 		groups := reg.FindStringSubmatch(lineContent)
 		
-		winningNbs := ToIntSlice(groups[1:11])
-		userNbs := ToIntSlice(groups[11:])
+		winningNbs := utils.ToIntSlice(groups[1:11])
+		userNbs := utils.ToIntSlice(groups[11:])
 		
 		for _, winN := range winningNbs {
 			for _, userN := range userNbs {
