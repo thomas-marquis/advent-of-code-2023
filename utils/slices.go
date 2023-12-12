@@ -22,3 +22,11 @@ func IsIn(val int, slice []int) bool {
 	}
 	return false
 }
+
+func SumSlice(slice []int) int {
+	var sum int
+	for _, item := range slice {
+		sum += item
+	}
+	return sum
+}

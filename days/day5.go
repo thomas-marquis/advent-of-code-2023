@@ -15,16 +15,17 @@ type MappingRange struct {
 }
 
 func (m *MappingRange) GetDestValue(sourceValue int) (int, bool) {
-	if sourceValue < m.SourceRangeStart || sourceValue > m.SourceRangeStart + m.RangeLength {
+	if sourceValue < m.SourceRangeStart || sourceValue >= m.SourceRangeStart + m.RangeLength {
 		return 0, false
 	}
 	return m.DestRangeStart + sourceValue - m.SourceRangeStart, true
 }
 
 func (m *MappingRange) GetSourceValue(destValue int) (int, bool) {
-	if destValue < m.DestRangeStart || destValue > m.DestRangeStart + m.RangeLength {
+	if destValue < m.DestRangeStart || destValue >= m.DestRangeStart + m.RangeLength {
 		return 0, false
 	}
+
 	return m.SourceRangeStart + destValue - m.DestRangeStart, true
 }
 
@@ -74,12 +75,38 @@ func (m *Mapping) GetSourceValue(destValue int) int {
 	return destValue
 }
 
-func (m *Mapping) GetSourceValueRecursively(destValue int, sourceName string) (int, bool) {
+func (m *Mapping) GetSourceValueRecursively(destValue int, sourceName string, debug bool) (int, bool) {
 	if m.SourceName == sourceName {
-		return m.GetSourceValue(destValue), true
+		srcVal := m.GetSourceValue(destValue)
+		if debug {
+			fmt.Printf("Final Mapping %s => %s: %d => %d\n", m.SourceName, m.DestName, srcVal, destValue)
+		}
+		return srcVal, true
 	}
 	if m.HasPrevMapping {
-		return m.PrevMapping.GetSourceValueRecursively(destValue, sourceName)
+		srcVal := m.PrevMapping.GetSourceValue(destValue)
+		if debug {
+			fmt.Printf("Mapping %s => %s: %d => %d\n", m.SourceName, m.DestName, srcVal, destValue)
+		}
+		return m.PrevMapping.GetSourceValueRecursively(srcVal, sourceName, debug)
+	}
+	return 0, false
+}
+
+func (m *Mapping) GetDestValueRecursively(sourceValue int, destName string, debug bool) (int, bool) {
+	if m.DestName == destName {
+		destVal := m.GetDestValue(sourceValue)
+		if debug {
+			fmt.Printf("Final Mapping %s => %s: %d => %d\n", m.SourceName, m.DestName, sourceValue, destVal)
+		}
+		return destVal, true
+	}
+	if m.HasNextMapping {
+		destVal := m.NextMapping.GetDestValue(sourceValue)
+		if debug {
+			fmt.Printf("Mapping %s => %s: %d => %d\n", m.SourceName, m.DestName, sourceValue, destVal)
+		}
+		return m.NextMapping.GetDestValueRecursively(destVal, destName, debug)
 	}
 	return 0, false
 }
@@ -278,14 +305,36 @@ func Day5() {
 	temperatureToHumidity.NextMapping = &humidityToLocation
 	humidityToLocation.PrevMapping = &temperatureToHumidity
 
-	for i := 0; i < humidityToLocation.GetMaxDestValue(); i++ {
-		res, ok := humidityToLocation.GetSourceValueRecursively(i, "seeds")
-		if ok && utils.IsIn(res, seeds) {
-			fmt.Printf("destination %d => seed %d\n", i, res)
-			break
+	var lowerLocId int
+	// for i := 0; i < humidityToLocation.GetMaxDestValue(); i++ {
+	// 	res, ok := humidityToLocation.GetSourceValueRecursively(i, "seeds", false)
+	// 	if ok && utils.IsIn(res, seeds) {
+	// 		fmt.Printf("location %d => seed %d\n", i, res)
+	// 		lowerLocId = i
+	// 		break
+	// 	}
+	// }
+
+	// lowerLocId = 130430854
+	// humidityToLocation.GetSourceValueRecursively(lowerLocId, "seeds", true)
+
+	var perSeedLocationId map[int]int = make(map[int]int)
+	for _, seed := range seeds {
+		res, ok := seedToSoil.GetDestValueRecursively(seed, "location", false)
+		if ok {
+			perSeedLocationId[seed] = res
+		}
+	}
+	for seed, locId := range perSeedLocationId {
+		fmt.Printf("seed %d => location %d\n", seed, locId)
+		if lowerLocId == 0 || locId < lowerLocId {
+			lowerLocId = locId
 		}
 	}
 
+	seedToSoil.GetDestValueRecursively(317528644, "location", true)
+
+	fmt.Printf("lower location id: %d\n", lowerLocId)
 }
 
 func buildMappingRange(lineContent string, mappingRanges []MappingRange) []MappingRange {
